@@ -19,6 +19,6 @@ if sys.argv[1] == 'profile':
 elif sys.argv[1] == 'time':
     n = 5
     t = timeit.timeit('parse_1kg()',  "from __main__ import parse_1kg", number=n)
-    print t/n
+    print(t/n)
 else:
-    print 'prof.py profile/time'
+    print('prof.py profile/time')

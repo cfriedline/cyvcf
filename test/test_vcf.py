@@ -1,8 +1,8 @@
 import unittest
 import doctest
 import os
-import commands
-from StringIO import StringIO
+import subprocess
+from io import StringIO
 
 import cyvcf
 from cyvcf import utils
@@ -68,9 +68,9 @@ class TestVcfSpecs(unittest.TestCase):
 
         # test we can walk the file at least
         for r in reader:
-            print r
+            print(r)
             for c in r:
-                print c
+                print(c)
                 assert c
 
         # asserting False while I work out what to check
@@ -135,7 +135,7 @@ class TestFreebayesOutput(TestGatkOutput):
 
     def testParse(self):
         reader = cyvcf.Reader(fh('freebayes.vcf'))
-        print reader.samples
+        print(reader.samples)
         self.assertEqual(len(reader.samples), 7)
         n = 0
         for r in reader:
@@ -173,18 +173,18 @@ class TestWriter(unittest.TestCase):
 
         records = list(reader)
 
-        map(writer.write_record, records)
+        list(map(writer.write_record, records))
         out.seek(0)
         reader2 = cyvcf.Reader(out)
 
-        self.assertEquals(reader.samples, reader2.samples)
-        self.assertEquals(reader.formats, reader2.formats)
+        self.assertEqual(reader.samples, reader2.samples)
+        self.assertEqual(reader.formats, reader2.formats)
 
         for k in reader.infos:
-            self.assertEquals(reader.infos[k], reader2.infos[k], (reader.infos[k], reader2.infos[k]))
+            self.assertEqual(reader.infos[k], reader2.infos[k], (reader.infos[k], reader2.infos[k]))
 
         for l, r in zip(records, reader2):
-            self.assertEquals(l.samples, r.samples)
+            self.assertEqual(l.samples, r.samples)
 
 class TestRecord(unittest.TestCase):
 
@@ -463,7 +463,7 @@ class TestCall(unittest.TestCase):
         reader = cyvcf.Reader(fh('example-4.0.vcf'))
         for var in reader:
             phases = var.gt_phases
-            print var
+            print(var)
             if var.POS == 14370:
                 self.assertEqual([True, True, False], phases)
             if var.POS == 17330:
@@ -494,7 +494,7 @@ class TestCall(unittest.TestCase):
         reader = cyvcf.Reader(fh('example-4.0.vcf'))
         for var in reader:
             for s in var:
-                print s.data
+                print(s.data)
             gt_types = [s.gt_type for s in var.samples]
             if var.POS == 14370:
                 self.assertEqual([0,1,3], gt_types)
@@ -511,7 +511,7 @@ class TestCall(unittest.TestCase):
         reader = cyvcf.Reader(fh('example-4.0.vcf'))
         for var in reader:
             for s in var:
-                print s.data
+                print(s.data)
             gt_depths = [s.gt_depth for s in var.samples]
             if var.POS == 14370:
                 self.assertEqual([1,8,5], gt_depths)
@@ -573,17 +573,17 @@ class TestTabix(unittest.TestCase):
         if not self.run:
             return
         lines = list(self.reader.fetch('20', 14370, 14370))
-        self.assertEquals(len(lines), 1)
+        self.assertEqual(len(lines), 1)
         self.assertEqual(lines[0].POS, 14370)
 
         lines = list(self.reader.fetch('20', 14370, 17330))
-        self.assertEquals(len(lines), 2)
+        self.assertEqual(len(lines), 2)
         self.assertEqual(lines[0].POS, 14370)
         self.assertEqual(lines[1].POS, 17330)
 
 
         lines = list(self.reader.fetch('20', 1110695, 1234567))
-        self.assertEquals(len(lines), 3)
+        self.assertEqual(len(lines), 3)
 
     def testFetchSite(self):
         if not self.run:
@@ -623,21 +623,21 @@ class TestFilter(unittest.TestCase):
 
 
     def testApplyFilter(self):
-        s, out = commands.getstatusoutput('python scripts/vcf_filter.py --site-quality 30 test/example-4.0.vcf sq')
+        s, out = subprocess.getstatusoutput('python scripts/vcf_filter.py --site-quality 30 test/example-4.0.vcf sq')
         #print out
         assert s == 0
         buf = StringIO()
         buf.write(out)
         buf.seek(0)
 
-        print buf.getvalue()
+        print(buf.getvalue())
         reader = cyvcf.Reader(buf)
 
 
         # check filter got into output file
         assert 'sq30' in reader.filters
 
-        print reader.filters
+        print(reader.filters)
 
         # check sites were filtered
         n = 0
@@ -651,7 +651,7 @@ class TestFilter(unittest.TestCase):
 
 
     def testApplyMultipleFilters(self):
-        s, out = commands.getstatusoutput('python scripts/vcf_filter.py --site-quality 30 '
+        s, out = subprocess.getstatusoutput('python scripts/vcf_filter.py --site-quality 30 '
         '--genotype-quality 50 test/example-4.0.vcf sq mgq')
         assert s == 0
         #print out
@@ -660,7 +660,7 @@ class TestFilter(unittest.TestCase):
         buf.seek(0)
         reader = cyvcf.Reader(buf)
 
-        print reader.filters
+        print(reader.filters)
 
         assert 'mgq50' in reader.filters
         assert 'sq30' in reader.filters
@@ -674,16 +674,16 @@ class TestRegression(unittest.TestCase):
 
     def test_null_mono(self):
         # null qualities were written as blank, causing subsequent parse to fail
-        print os.path.abspath(os.path.join(os.path.dirname(__file__),  'null_genotype_mono.vcf'))
+        print(os.path.abspath(os.path.join(os.path.dirname(__file__),  'null_genotype_mono.vcf')))
         p = cyvcf.Reader(fh('null_genotype_mono.vcf'))
         assert p.samples
         out = StringIO()
         writer = cyvcf.Writer(out, p)
-        map(writer.write_record, p)
+        list(map(writer.write_record, p))
         out.seek(0)
-        print out.getvalue()
+        print(out.getvalue())
         p2 = cyvcf.Reader(out)
-        rec = p2.next()
+        rec = next(p2)
         assert rec.samples
 
 
@@ -726,7 +726,7 @@ class TestAD(unittest.TestCase):
         self.reader = cyvcf.Reader(fh('test.vcf'))
 
     def testRefDepth(self):
-        v = self.reader.next()
+        v = next(self.reader)
         self.assertEqual(v.samples[0].gt_ref_depth, -1)
 
 class TestGLInt(unittest.TestCase):
